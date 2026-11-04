@@ -165,6 +165,71 @@ anchor pass cuts as it goes:
 mosaico render project.yml --bootstrap    # no API call, pieces cut
 ```
 
+## Scene artifacts: drawn locally, no model
+
+An artifact can name a scene file instead of a prompt. mosaico builds the scene
+from boxes, cylinders, spheres, tori and posed mannequins, renders it with
+[manifoldx](https://github.com/gia-uh/manifoldx), and paints the passes as ink
+and watercolour. No API call and no cost; about 5 to 10 seconds per image on a
+laptop GPU, and the same file always gives the same image.
+
+```bash
+pip install 'mosaico[scene]'
+```
+
+```yaml
+# project.yml
+artifacts:
+  - id: atum-cover
+    scene: scenes/atum.yml   # relative to this manifest
+    shot: cover              # optional; the scene's first shot by default
+    out: atum/cover.jpg
+```
+
+```yaml
+# scenes/atum.yml
+include: [common.yml]        # shared prefabs and materials; this file wins a clash
+size: [1500, 1000]
+prefabs:
+  hill:
+    parts:
+      - {id: mound, material: mud, mesh: {icosphere: [3, 1.0]}, scale: [3.4, 0.55, 2.2]}
+scene:
+  far: 1500
+  sun: {direction: [0.1, -0.22, 1.0], intensity: 3.0, color: "#ffd9a0"}
+  shots:
+    cover: {position: [0, 2.2, -14], target: [0, 1.6, 0], fov: 38}
+  objects:
+    - {id: hill, prefab: hill}
+    - id: atum
+      humanoid: {pose: stand, body: male, height: 1.8, skin: skin, cloth: linen}
+      at: [0, 0.5, 0]
+      facing: [0, -14]
+pass:
+  seed: 11
+  sky: {gradient: ["#1d2235", "#e7a467", "#f6d38e"], blotch: 0.25, blotch_scale: 150}
+  ink: {color: "#20160f", object: 2.3, part: 1.15, crease: 0.9, wobble: 0.8, far: 160}
+  materials:
+    mud:   {color: "#8a6545", shadow: "#4a3322", blotch: 0.35, blotch_scale: 18}
+    skin:  {color: "#b07a52", shadow: "#5e3b26", blotch: 0.1, blotch_scale: 8}
+    linen: {color: "#efe6d2", shadow: "#9c8f7a", blotch: 0.1, blotch_scale: 8}
+```
+
+A part is a mesh (`box: [w, h, d]`, `cylinder: [radius, height, segments]`,
+`icosphere: [subdivisions, radius]`, `torus: [major, minor]`) or a nested
+`prefab:`, placed with `at`, `rotate` (degrees) and `scale`, copied with
+`repeat: {line: {count, from, to}}` or `repeat: {ring: {count, radius, axis}}`,
+and deformed with `ops:` (any manifoldx `Mesh` method, such as `taper`). An
+object with `no_ink: true` gets no outline (clouds, a sun). The full format is
+in `src/mosaico/scene.py`.
+
+The cache key is the content of the scene file, every file it includes, and
+the shot: edit any of them and the image renders again. A scene artifact takes
+no `refs`, `grid` or `model`.
+
+The mannequins hold up as small figures in a landscape, under about 60 pixels
+tall. Close-ups of people and animals are beyond them.
+
 ## Migrating existing images under mosaico
 
 If you already have generated images on disk and want to bring them under

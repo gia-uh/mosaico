@@ -128,9 +128,22 @@ def _ref_hashes(
     return out
 
 
+def _scene_path(artifact: Artifact, project: Project) -> Path:
+    return project.yaml_path.parent / artifact.scene
+
+
 def _input_hash_for(
     artifact: Artifact, project: Project, state: dict
 ) -> tuple[str, dict]:
+    if artifact.scene is not None:
+        from mosaico.scene import SceneError, scene_hash
+
+        try:
+            digest = scene_hash(_scene_path(artifact, project), artifact.shot)
+        except SceneError as e:
+            raise SchemaError(f"artifact `{artifact.id}`: {e}") from e
+        inputs = {"scene": digest}
+        return compute_input_hash(inputs), inputs
     inputs = {
         "resolved_prompt": _resolve_prompt(artifact, project),
         "model": artifact.resolved_model,
@@ -408,6 +421,24 @@ def run_render(
 
         out_abs = project.out_root / artifact.out
         m.info(f"render {artifact.id} -> {out_abs}")
+        if artifact.scene is not None:
+            from mosaico.scene import SceneError, render_scene
+
+            try:
+                written = render_scene(_scene_path(artifact, project), artifact.shot, out_abs)
+            except SceneError as e:
+                m.fail(f"artifact `{artifact.id}`: {e}")
+            state["artifacts"][artifact.id] = {
+                "input_hash": ihash,
+                "output_hash": file_sha256(written),
+                "model": "scene",
+                "seed": artifact.resolved_seed,
+                "rendered_at": _now_iso(),
+                "out": _out_rel(written, project),
+                "cells": {},
+            }
+            summary.rendered.append(artifact.id)
+            continue
         written = run_gen(
             prompt=inputs["resolved_prompt"],
             out=out_abs,

@@ -52,6 +52,8 @@ class Artifact:
     size: str | None = None
     api: str | None = None
     resolution: str | None = None
+    scene: str | None = None
+    shot: str | None = None
 
     resolved_model: str = ""
     resolved_seed: int = 0
@@ -251,8 +253,27 @@ def parse_project(path: Path | str) -> Project:
             )
         seen_ids.add(aid)
 
+        scene = raw_a.get("scene")
         prompt = raw_a.get("prompt_template") or raw_a.get("description")
-        if not prompt:
+        if scene is not None:
+            if not isinstance(scene, str) or not scene.strip():
+                raise SchemaError(
+                    f"artifact `{aid}`: `scene:` must be a scene file path, "
+                    f"relative to the manifest. {_TOUR_HINT}"
+                )
+            mixed = [k for k in ("refs", "grid", "cells", "cells_out", "model", "api") if raw_a.get(k)]
+            if mixed:
+                raise SchemaError(
+                    f"artifact `{aid}`: a `scene:` artifact is drawn locally "
+                    f"from its scene file and takes no {', '.join(f'`{k}:`' for k in mixed)}. "
+                    f"{_TOUR_HINT}"
+                )
+            prompt = prompt or ""
+        elif raw_a.get("shot") is not None:
+            raise SchemaError(
+                f"artifact `{aid}`: `shot:` only goes with `scene:`. {_TOUR_HINT}"
+            )
+        if not prompt and scene is None:
             raise SchemaError(
                 f"artifact `{aid}` is missing `prompt_template:` "
                 f"(or `description:` alias). {_TOUR_HINT}"
@@ -320,6 +341,8 @@ def parse_project(path: Path | str) -> Project:
             size=raw_a.get("size"),
             api=raw_a.get("api"),
             resolution=raw_a.get("resolution"),
+            scene=scene,
+            shot=raw_a.get("shot"),
         )
         a.resolved_model = a.model or defaults.get(
             "model", "google/gemini-3.1-flash-image-preview"
