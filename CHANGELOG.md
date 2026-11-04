@@ -4,6 +4,11 @@
 
 ### Added
 
+- **Scene artifacts.** `scene: <file>` (and optional `shot:`) in place of a
+  prompt: mosaico builds the scene from primitives, prefabs and mannequins,
+  renders it with manifoldx and paints it as ink and watercolour, locally, with
+  no API call. `include:` shares prefabs and materials between scene files; the
+  cache key covers every file read and the shot. New `scene` extra (#8).
 - **OpenRouter `/api/v1/images` endpoint.** New `api:` field (`chat`, the
   default, or `images`) on artifacts and in `defaults:`, and `--api` on
   `mosaico gen`. With `images`, refs are sent as `input_references`, the

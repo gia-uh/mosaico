@@ -84,6 +84,11 @@ def explain(
 
         print(f"┌─ {art.id}  [{status}]")
         print(f"│  out:     {art.out}  ({out_marker})")
+        if art.scene is not None:
+            print(f"│  scene:   {art.scene}  shot: {art.shot or '(first)'}")
+            print(f"└─ input_hash: {ihash[:24]}…  ({'will skip' if status == 'ready' else 'will render, locally'})")
+            print()
+            continue
         print(f"│  model:   {art.resolved_model}")
         print(
             f"│  seed:    {art.resolved_seed}     "

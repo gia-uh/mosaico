@@ -25,6 +25,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+scene = [
+    "manifold-gfx[ink,offline]; python_version >= '3.13'",
+]
 dev = [
     "pytest>=7.0",
 ]
@@ -46,6 +49,7 @@ packages = ["src/mosaico"]
 
 [tool.uv.sources]
 microcli-toolkit = { path = "../microcli", editable = true }
+manifold-gfx = { path = "../manifoldx", editable = true }
 
 [dependency-groups]
 dev = [
@@ -56,3 +60,4 @@ dev = [
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+
